@@ -55,7 +55,7 @@ jobs:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
       - name: Log in to DigitalOcean Container Registry with short-lived credentials
-        run: doctl registry login --expiry-seconds 600
+        run: doctl registry login --expiry-seconds 900
 
       - name: Build
         id: docker_build
@@ -65,6 +65,7 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.prep.outputs.tags }}
+          push: true
           labels: |
             org.opencontainers.image.title=${{ github.event.repository.name }}
             org.opencontainers.image.description=${{ github.event.repository.description }}
@@ -74,6 +75,3 @@ jobs:
             org.opencontainers.image.created=${{ steps.prep.outputs.created }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}
-
-      - name: Push image to DigitalOcean Container Registry
-        run: docker push ${DOCKER_IMAGE}:${GITHUB_SHA::8}

@@ -9,6 +9,8 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    env:
+      DOCKER_IMAGE: registry.digitalocean.com/eng-api/tester
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -16,7 +18,6 @@ jobs:
       - name: Prepare
         id: prep
         run: |
-          DOCKER_IMAGE=registry.digitalocean.com/eng-api
           VERSION=noop
           if [ "${{ github.event_name }}" = "schedule" ]; then
             VERSION=nightly
@@ -56,14 +57,13 @@ jobs:
       - name: Log in to DigitalOcean Container Registry with short-lived credentials
         run: doctl registry login --expiry-seconds 600
 
-      - name: Build and push
+      - name: Build
         id: docker_build
         uses: docker/build-push-action@v2
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: true
           tags: ${{ steps.prep.outputs.tags }}
           labels: |
             org.opencontainers.image.title=${{ github.event.repository.name }}
@@ -74,3 +74,6 @@ jobs:
             org.opencontainers.image.created=${{ steps.prep.outputs.created }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}
+
+      - name: Push image to DigitalOcean Container Registry
+        run: docker push ${DOCKER_IMAGE}:${GITHUB_SHA::8}
